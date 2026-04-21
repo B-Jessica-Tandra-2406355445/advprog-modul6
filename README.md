@@ -27,3 +27,11 @@ One thing that stood out to me was the role of the `Content-Length` header. I di
 In this milestone, I added request validation to differentiate between a valid request to `/` and any other path, returning the appropriate HTML file and status code. Before refactoring, the naive approach duplicated the file-reading and response-sending logic inside both the `if` and `else` blocks. This violates the DRY (Don't Repeat Yourself) principle. If we ever needed to change the response format, we would have to update the code in multiple places, which is highly inefficient.
 
 To solve this, I refactored the code by separating the decision from the execution. Because `if` is an expression in Rust, I used it to simply evaluate and return a tuple containing the `(status_line, filename)`. The shared execution logic—reading the file, calculating its length, and writing to the stream—is now written only once below the conditional block. This makes the code much cleaner, concise, and easier to maintain since there is only one central place to execute the response.
+
+---
+
+# Commit 4 Reflection notes
+
+In this milestone, I simulated a slow response by adding a `/sleep` endpoint that forces the server to pause for 10 seconds using `thread::sleep`. This exercise perfectly demonstrates the fundamental limitation of our current single-threaded server. Because the program processes everything sequentially on one thread, it becomes entirely occupied until a request is completely finished. The thread is simply blocked waiting for the sleep duration to end.
+
+When opening `127.0.0.1:7878/sleep` and a normal `/` request simultaneously in two browser tabs, I observed that the normal request is forced to wait until the 10-second sleep finishes, even though it requires zero computation to handle. The second request is basically stuck in the OS's connection queue because the only available thread is busy. In a real-world scenario, this means one slow request (like a heavy database query) would freeze the entire server for all other users.
