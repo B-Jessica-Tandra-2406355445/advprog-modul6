@@ -10,10 +10,20 @@ I also noticed that the code uses `.unwrap()` quite a lot just to keep things si
 
 # Commit 2 Reflection notes
 
-![Commit 2 screen capture](/assets/images/image.png)
+![Commit 2 screen capture](/assets/images/commit2.png)  
 
 At first, I thought we could just send the HTML content directly through the stream, but it turns out it’s not that simple. HTTP responses have a specific format that needs to be followed, starting with a status line like `HTTP/1.1 200 OK`, followed by headers, then a blank line `(\r\n\r\n)`, and only after that the actual body. Without this structure, the browser won’t be able to understand the response properly.
 
 For reading the HTML file, the code uses `fs::read_to_string("hello.html")`, which I found quite convenient because it handles opening, reading, and closing the file in one go. It returns a `Result<String>`, which makes sense since file operations can fail for various reasons.
 
 One thing that stood out to me was the role of the `Content-Length` header. I didn’t realize before that TCP itself doesn’t define clear message boundaries, so the browser actually doesn’t know when the response ends unless we tell it. By including `Content-Length`, we specify exactly how many bytes the browser should read. Without it, the browser might just keep waiting for more data. That’s why `contents.len()` needs to be calculated and added to the headers before sending the response.
+
+---
+
+# Commit 3 Reflection notes
+
+![Commit 3 screen capture](/assets/images/commit3.png)  
+
+In this milestone, I added request validation to differentiate between a valid request to `/` and any other path, returning the appropriate HTML file and status code. Before refactoring, the naive approach duplicated the file-reading and response-sending logic inside both the `if` and `else` blocks. This violates the DRY (Don't Repeat Yourself) principle. If we ever needed to change the response format, we would have to update the code in multiple places, which is highly inefficient.
+
+To solve this, I refactored the code by separating the decision from the execution. Because `if` is an expression in Rust, I used it to simply evaluate and return a tuple containing the `(status_line, filename)`. The shared execution logic—reading the file, calculating its length, and writing to the stream—is now written only once below the conditional block. This makes the code much cleaner, concise, and easier to maintain since there is only one central place to execute the response.
