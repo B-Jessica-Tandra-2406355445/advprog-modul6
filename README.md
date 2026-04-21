@@ -52,3 +52,13 @@ The main thread sends jobs to the workers via an `mpsc` (Multiple Producer, Sing
 
 ### 3. The Subtlety of Lock Lifetimes (`let` vs `while let`)
 The book highlighted a critical detail about how long the `Mutex` lock is held. By using a standard `let` statement (`let job = receiver.lock().unwrap().recv().unwrap();`), the temporary `MutexGuard` is dropped immediately after the job is received but *before* `job()` executes. This allows other workers to concurrently grab new jobs. If we had used `while let` instead, the lock would be held for the entire duration of `job()`, blocking all other workers and effectively reverting the server back to single-threaded behavior.
+
+---
+
+# Reflection Bonus
+
+In the original implementation, the `ThreadPool::new` function used an `assert!(size > 0)` macro. While functional, this approach is dangerous because passing a size of 0 causes the program to immediately `panic!`. This represents an **unrecoverable error**, meaning the library unilaterally crashes the entire server without giving the caller a chance to handle the situation.
+
+For the bonus, I improved this by implementing the `ThreadPool::build` function, which returns a `Result<ThreadPool, PoolCreationError>`. This shifts the error handling from an unrecoverable panic to a **recoverable error**. 
+
+This is a much more idiomatic Rust library design. By returning a `Result`, the `ThreadPool` delegates the error-handling responsibility back to the caller (in `main.rs`). I can then use `unwrap_or_else` to gracefully catch the custom `PoolCreationError`, print a clean, user-friendly error message via `eprintln!`, and exit the process safely (`process::exit(1)`) without dumping a scary stack trace to the terminal.
