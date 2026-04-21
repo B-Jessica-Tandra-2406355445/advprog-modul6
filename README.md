@@ -1,0 +1,7 @@
+# Commit 1 Reflection notes
+
+For this first milestone, I tried to build a simple TCP connection handler using Rust’s standard library. At first, I didn’t realize that `TcpListener::bind` actually makes a system call to the OS to reserve a port (in this case, 7878). It makes sense why it returns a `Result`, since it can fail if the port is already in use or if there aren’t enough permissions.
+
+In the `handle_connection` function, I found the use of `BufReader` pretty helpful. Without it, reading from the stream would happen byte by byte, which would result in a lot of system calls. By using `BufReader`, the data is buffered first, so it’s more efficient. For parsing the HTTP request, the code uses an iterator chain. Since data from a TCP stream comes in as raw bytes, `.lines()` helps convert it into UTF-8 strings and also splits it by lines. Then `.map()` is used to unwrap each result, and `.take_while()` keeps reading until it encounters an empty line. It turns out this is exactly how the HTTP protocol signals that the request headers have ended. Finally, `.collect()` is used to execute the whole chain and store the result in a `Vec<String>`.
+
+I also noticed that the code uses `.unwrap()` quite a lot just to keep things simple. But in a real application, this could be risky, so proper error handling with `match` or the `?` operator would be better. Also, the stream parameter needs to be marked as `mut` because reading from it changes its internal state.
